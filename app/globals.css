@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,600;1,400&family=Syne:wght@400;600;700;800&display=swap');
+
+:root {
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-sans: 'Syne', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  background-color: #0a0a0f;
+  color: #f0eeff;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Custom Scrollbar ─────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2a38;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #353545;
+}
+
+/* ── Focus Rings ──────────────────────────────────────────────── */
+input:focus,
+textarea:focus,
+button:focus-visible {
+  outline: 2px solid #7c3aed;
+  outline-offset: 2px;
+}
+
+/* ── Prose styles for markdown messages ──────────────────────── */
+.prose-chat {
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: #e8e6f0;
+}
+
+.prose-chat p { margin: 0 0 0.75rem; }
+.prose-chat p:last-child { margin-bottom: 0; }
+
+.prose-chat h1,
+.prose-chat h2,
+.prose-chat h3 {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  margin: 1rem 0 0.5rem;
+  color: #f0eeff;
+}
+.prose-chat h1 { font-size: 1.1rem; }
+.prose-chat h2 { font-size: 1rem; }
+.prose-chat h3 { font-size: 0.9rem; }
+
+.prose-chat code {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  background: rgba(124, 58, 237, 0.12);
+  border: 1px solid rgba(124, 58, 237, 0.25);
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: #c4b5fd;
+}
+
+.prose-chat pre {
+  background: #111118;
+  border: 1px solid #2a2a38;
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+}
+.prose-chat pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #c8c6d8;
+}
+
+.prose-chat ul,
+.prose-chat ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+.prose-chat li { margin: 0.2rem 0; }
+
+.prose-chat blockquote {
+  border-left: 3px solid #7c3aed;
+  padding-left: 1rem;
+  margin: 0.75rem 0;
+  color: #a8a8c0;
+  font-style: italic;
+}
+
+.prose-chat strong { color: #f0eeff; font-weight: 600; }
+.prose-chat a { color: #a78bfa; text-decoration: underline; }
+
+/* ── Drag-and-drop highlight ──────────────────────────────────── */
+.drop-active {
+  border-color: #7c3aed !important;
+  background: rgba(124, 58, 237, 0.08) !important;
+}
