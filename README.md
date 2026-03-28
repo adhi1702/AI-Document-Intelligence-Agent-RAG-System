@@ -1,6 +1,17 @@
-# ⚡ PDF Chat — RAG-powered document Q&A
+# 🤖 AI Document Intelligence Agent — RAG System
 
-Chat with your PDFs using **Groq LLaMA3-70b**, **HuggingFace embeddings**, and an **in-memory vector store** — all inside a Next.js 14 App Router project.
+> Chat with your PDF documents using **Retrieval-Augmented Generation (RAG)**. Upload any PDF, ask questions in natural language, and get precise, cited answers powered by **Groq LLaMA 3.3** for inference and **Google Gemini** for semantic embeddings.
+
+---
+
+## ✨ Features
+
+- 📄 **Multi-document support** — upload and switch between multiple PDFs in a session
+- 🔍 **Semantic search** — cosine similarity over Gemini embeddings for accurate chunk retrieval
+- 💬 **Conversational memory** — maintains the last 10 turns for natural follow-up questions
+- 📚 **Source citations** — every answer links back to the exact document and chunk
+- ⚡ **Fast inference** — Groq's hardware-accelerated LLaMA 3.3 70B for near-instant responses
+- 🎨 **Modern UI** — drag-and-drop upload, session history sidebar, markdown-rendered answers
 
 ---
 
@@ -11,22 +22,22 @@ User uploads PDF
       │
       ▼
 /api/upload
-  1. pdf-parse    → extract raw text
-  2. chunkText()  → split into 1000-char overlapping chunks
-  3. HuggingFace  → embed each chunk (all-MiniLM-L6-v2)
-  4. vectorStore  → store chunks + embeddings in memory
+  1. pdf-parse             → extract raw text from PDF
+  2. chunkText()           → split into 1000-char overlapping chunks (150-char overlap)
+  3. Gemini Embeddings     → embed each chunk (gemini-embedding-001)
+  4. vectorStore           → store chunks + embedding vectors in memory
       │
       ▼
 User asks a question
       │
       ▼
 /api/chat
-  1. HuggingFace  → embed the question
-  2. vectorStore  → cosine similarity search → top 5 chunks
-  3. Groq LLaMA3  → answer with context + chat history
+  1. Gemini Embeddings     → embed the user's question
+  2. vectorStore           → cosine similarity search → top 5 matching chunks
+  3. Groq LLaMA 3.3-70b   → generate answer with context + conversation history
       │
       ▼
-     UI renders answer + source citations
+     UI renders answer with source citations
 ```
 
 ---
@@ -36,8 +47,8 @@ User asks a question
 ### 1. Clone & install
 
 ```bash
-git clone <your-repo>
-cd pdf-chat-app
+git clone https://github.com/adhi1702/AI-Document-Intelligence-Agent-RAG-System.git
+cd AI-Document-Intelligence-Agent-RAG-System
 npm install
 ```
 
@@ -47,20 +58,20 @@ npm install
 cp .env.local.example .env.local
 ```
 
-Edit `.env.local` and fill in:
+Edit `.env.local` and fill in your API keys:
 
 ```env
-GROQ_API_KEY=gsk_...        # https://console.groq.com — free
-HUGGINGFACE_API_TOKEN=hf_...  # https://huggingface.co/settings/tokens — free
+GROQ_API_KEY=gsk_...         # Free at https://console.groq.com
+GEMINI_API_KEY=AIza...       # Free at https://aistudio.google.com/apikey
 ```
 
-### 3. Run dev server
+### 3. Run the dev server
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) and start chatting with your PDFs.
 
 ---
 
@@ -70,33 +81,33 @@ Open [http://localhost:3000](http://localhost:3000).
 pdf-chat-app/
 │
 ├── app/
-│   ├── layout.tsx              # Root layout + fonts
-│   ├── page.tsx                # Main page — all state lives here
-│   ├── globals.css             # Tailwind + custom styles
+│   ├── layout.tsx              # Root layout & metadata
+│   ├── page.tsx                # Main page — global state management
+│   ├── globals.css             # Tailwind + custom global styles
 │   └── api/
-│       ├── upload/route.ts     # PDF upload → parse → chunk → embed
-│       └── chat/route.ts       # Question → embed → search → LLM
+│       ├── upload/route.ts     # PDF upload → parse → chunk → embed → store
+│       └── chat/route.ts       # Question → embed → vector search → LLM answer
 │
 ├── components/
-│   ├── Sidebar.tsx             # Left panel: docs + session history
-│   ├── ChatBox.tsx             # Main chat panel + input
-│   ├── Message.tsx             # Single message bubble + source citations
-│   ├── FileUpload.tsx          # Drag-and-drop PDF uploader
-│   └── UploadModal.tsx         # Modal wrapper for file upload
+│   ├── Sidebar.tsx             # Left panel: document list + session history
+│   ├── ChatBox.tsx             # Main chat panel + message input
+│   ├── Message.tsx             # Individual message bubble + source citations
+│   ├── FileUpload.tsx          # Drag-and-drop PDF uploader component
+│   └── UploadModal.tsx         # Modal wrapper for the file upload flow
 │
 ├── lib/
-│   ├── pdf.ts                  # parsePDF() + chunkText()
-│   ├── embeddings.ts           # HuggingFace embedding API calls
-│   ├── vectorStore.ts          # In-memory cosine similarity search
+│   ├── pdf.ts                  # parsePDF() + chunkText() utilities
+│   ├── embeddings.ts           # Google Gemini embedding API (gemini-embedding-001)
+│   ├── vectorStore.ts          # In-memory vector store with cosine similarity search
 │   └── groq.ts                 # Groq API — buildSystemPrompt() + askGroq()
 │
 ├── utils/
-│   └── helpers.ts              # cn(), formatBytes(), timeAgo(), etc.
+│   └── helpers.ts              # Shared helpers: cn(), formatBytes(), timeAgo()
 │
 ├── types/
-│   └── index.ts                # All shared TypeScript types
+│   └── index.ts                # Shared TypeScript types & interfaces
 │
-├── .env.local.example          # Copy → .env.local and fill in keys
+├── .env.local.example          # Copy to .env.local and add your API keys
 ├── next.config.js
 ├── tailwind.config.ts
 └── tsconfig.json
@@ -106,29 +117,33 @@ pdf-chat-app/
 
 ## 🔧 Key Design Decisions
 
-| Decision | Why |
+| Decision | Rationale |
 |---|---|
-| In-memory vector store | Zero setup — perfect for local dev and demos. Swap for Pinecone/pgvector for production. |
-| HuggingFace `all-MiniLM-L6-v2` | Free, fast, good quality for semantic search. 384-dim vectors. |
-| Groq `llama3-70b-8192` | Fastest free LLM inference available. 8192-token context window. |
-| 1000-char chunks / 150 overlap | Balances context per chunk vs. retrieval precision. Tune to your use case. |
-| Chat history (last 10 turns) | Enables follow-up questions without exploding the context window. |
+| **In-memory vector store** | Zero setup — ideal for demos and local dev. Swap with Pinecone or pgvector for production persistence. |
+| **Gemini `gemini-embedding-001`** | Free via Google AI Studio, high-quality semantic embeddings, no rate-limit surprises. |
+| **Groq `llama-3.3-70b-versatile`** | State-of-the-art open-source LLM with industry-leading inference speed on Groq hardware. |
+| **1000-char chunks / 150 overlap** | Balances retrieval precision with sufficient context per chunk. Tune for your documents. |
+| **Top-5 chunk retrieval** | Provides rich context without overloading the LLM's context window. |
+| **10-turn chat history** | Enables natural follow-up questions while keeping token usage manageable. |
 
 ---
 
 ## 🔥 Upgrade Path
 
-### Add Pinecone (persistent vector store)
-Replace `lib/vectorStore.ts` with Pinecone client calls. Everything else stays the same.
+### Persistent vector store (Pinecone / pgvector)
+Replace `lib/vectorStore.ts` with your preferred vector DB client. The `getEmbeddings()` interface stays the same.
 
-### Add streaming responses
-In `/api/chat/route.ts`, use `askGroqStream()` from `lib/groq.ts` and return a `StreamingTextResponse`.
+### Streaming responses
+`lib/groq.ts` already exports `askGroqStream()`. Wire it into `/api/chat/route.ts` and return a `StreamingTextResponse` for token-by-token streaming.
 
-### Add authentication
-Wrap `app/layout.tsx` with NextAuth or Clerk — protect the API routes with middleware.
+### Authentication
+Wrap `app/layout.tsx` with [NextAuth](https://next-auth.js.org/) or [Clerk](https://clerk.com/) and protect `/api/*` routes with middleware.
 
-### Add persistent sessions
-Store `ChatSession[]` in a database (Supabase, PlanetScale) instead of React state.
+### Persistent sessions
+Move `ChatSession[]` from React state into a database (Supabase, PlanetScale, etc.) for cross-session history.
+
+### File storage
+Currently PDFs are processed in-memory and not stored. Add S3 or Supabase Storage to retain original files.
 
 ---
 
@@ -136,10 +151,31 @@ Store `ChatSession[]` in a database (Supabase, PlanetScale) instead of React sta
 
 | Package | Purpose |
 |---|---|
-| `next` 14 | Framework — App Router + API routes |
+| `next` 14 | Framework — App Router + serverless API routes |
+| `@google/generative-ai` | Google Gemini SDK for embedding API access |
 | `pdf-parse` | Server-side PDF text extraction |
-| `react-markdown` + `remark-gfm` | Render LLM markdown responses |
-| `axios` | HTTP client for API calls |
-| `uuid` | Generate unique IDs for docs, messages, sessions |
-| `clsx` | Conditional Tailwind class merging |
-| `tailwindcss` | Utility-first styling |
+| `react-markdown` + `remark-gfm` | Render LLM markdown responses in the UI |
+| `axios` | HTTP client |
+| `uuid` | Unique IDs for documents, messages & sessions |
+| `clsx` | Conditional class name merging |
+| `tailwindcss` | Utility-first CSS framework |
+
+---
+
+## 🛠 Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Framework** | Next.js 14 (App Router) |
+| **Language** | TypeScript |
+| **Styling** | Tailwind CSS |
+| **LLM Inference** | Groq — LLaMA 3.3 70B Versatile |
+| **Embeddings** | Google Gemini — gemini-embedding-001 |
+| **PDF Parsing** | pdf-parse |
+| **Vector Search** | Custom in-memory cosine similarity |
+
+---
+
+## 📄 License
+
+MIT — free to use, modify, and distribute.
