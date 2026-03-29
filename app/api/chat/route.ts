@@ -19,11 +19,14 @@ export async function POST(req: NextRequest): Promise<NextResponse<ChatResponse>
     }
 
     // 1. Embed the user's question
+    console.log(`[chat] Generating query embedding for: "${question.substring(0, 50)}..."`);
     const [questionEmbedding] = await getEmbeddings([question]);
 
     // 2. Retrieve the most relevant chunks from the vector store
     //    Filter to only the docs the user has selected (from chunks docIds)
-    const activeDocIds = Array.from(new Set(chunks.map((c) => c.docId)));    const sources = vectorStore.search(questionEmbedding, 5, activeDocIds);
+    const activeDocIds = Array.from(new Set(chunks.map((c) => c.docId)));
+    const sources = vectorStore.search(questionEmbedding, 5, activeDocIds);
+    console.log(`[chat] Found ${sources.length} matching sources for query.`);
 
     if (sources.length === 0) {
       return NextResponse.json({

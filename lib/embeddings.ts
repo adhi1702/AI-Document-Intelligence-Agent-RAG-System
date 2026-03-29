@@ -1,41 +1,66 @@
-// gemini-embedding-001 is the available embedding model on v1beta
-const GEMINI_EMBEDDING_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent";
+import { pipeline } from "@xenova/transformers";
 
-/**
- * Calls the Gemini v1 REST API to get an embedding for a single text.
- */
-async function embedOne(text: string, apiKey: string): Promise<number[]> {
-  const response = await fetch(`${GEMINI_EMBEDDING_URL}?key=${apiKey}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "models/gemini-embedding-001",
-      content: { parts: [{ text }] },
-    }),
-  });
+// Singleton pattern to ensure the model only loads once
+class PipelineSingleton {
+  static task: any = "feature-extraction";
+  static model = "Xenova/bge-small-en-v1.5";
+  static instance: any = null;
 
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Gemini embedding error: ${err}`);
+  static async getInstance(progress_callback?: any) {
+    if (PipelineSingleton.instance === null) {
+      console.log(`[embeddings] Loading model ${PipelineSingleton.model}...`);
+      PipelineSingleton.instance = await pipeline(
+        PipelineSingleton.task,
+        PipelineSingleton.model,
+        {
+          progress_callback,
+        }
+      );
+      console.log(`[embeddings] Model loaded!`);
+    }
+    return PipelineSingleton.instance;
   }
+}
 
-  const data = await response.json();
-  return data.embedding.values as number[];
+// Next.js Dev Mode Fix: Prevent multiple model instances during hot reloading
+const globalForPipeline = global as unknown as { 
+  pipelineInstance: any;
+  PipelineSingleton: typeof PipelineSingleton;
+};
+
+if (!globalForPipeline.PipelineSingleton) {
+  globalForPipeline.PipelineSingleton = PipelineSingleton;
 }
 
 /**
- * Returns a 2D array: one embedding vector per input text.
+ * Gets embeddings using the local Transformers.js model BAAI/bge-small-en-v1.5.
+ * This runs entirely on your machine with NO external API calls or rate limits.
  */
 export async function getEmbeddings(texts: string[]): Promise<number[][]> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      "GEMINI_API_KEY is missing. Add it to your .env.local file."
-    );
-  }
+  // Use the singleton from global scope
+  const extractor = await globalForPipeline.PipelineSingleton.getInstance();
 
-  return Promise.all(texts.map((text) => embedOne(text, apiKey)));
+  const results = await Promise.all(
+    texts.map(async (text) => {
+      // Generate the embedding
+      const output = await extractor(text, {
+        pooling: "mean",
+        normalize: true,
+      });
+
+      // Transform Tensor to standard JS array
+      const rawData = Array.from(output.data) as number[];
+      
+      // Verification log for the first element
+      if (texts.indexOf(text) === 0) {
+        console.log(`[embeddings] Generated embedding with dimensions: ${rawData.length}`);
+      }
+
+      return rawData;
+    })
+  );
+
+  return results;
 }
 
 /**
@@ -43,7 +68,10 @@ export async function getEmbeddings(texts: string[]): Promise<number[][]> {
  * Returns a score between -1 and 1 (1 = identical direction).
  */
 export function cosineSimilarity(a: number[], b: number[]): number {
-  if (a.length !== b.length) return 0;
+  if (!a || !b || a.length !== b.length) {
+    if (a && b) console.warn(`[embeddings] Dimension mismatch: ${a.length} vs ${b.length}`);
+    return 0;
+  }
   let dot = 0,
     normA = 0,
     normB = 0;

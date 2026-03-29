@@ -65,6 +65,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<UploadRespons
 
     // 5. Store in in-memory vector store
     vectorStore.add(chunks, allEmbeddings);
+    console.log(`[upload] Successfully stored ${chunks.length} embeddings for ${file.name}`);
 
     return NextResponse.json({ success: true, doc, chunks });
   } catch (error: unknown) {

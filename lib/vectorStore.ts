@@ -3,12 +3,6 @@ import { cosineSimilarity } from "./embeddings";
 
 /**
  * In-memory vector store.
- *
- * Lives in module scope — persists across requests within the same
- * Next.js server process (dev + single-instance prod).
- *
- * For multi-instance or persistent storage, swap this for Pinecone,
- * Upstash Vector, or a pg+pgvector database.
  */
 class InMemoryVectorStore {
   private entries: VectorStoreEntry[] = [];
@@ -57,5 +51,8 @@ class InMemoryVectorStore {
   }
 }
 
-// Singleton — one store for the entire server process
-export const vectorStore = new InMemoryVectorStore();
+// Next.js Dev Mode Fix: Prevent multiple instances during hot reloading
+const globalForVectorStore = global as unknown as { vectorStore: InMemoryVectorStore };
+export const vectorStore = globalForVectorStore.vectorStore || new InMemoryVectorStore();
+
+if (process.env.NODE_ENV !== "production") globalForVectorStore.vectorStore = vectorStore;
