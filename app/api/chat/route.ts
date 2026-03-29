@@ -23,8 +23,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<ChatResponse>
 
     // 2. Retrieve the most relevant chunks from the vector store
     //    Filter to only the docs the user has selected (from chunks docIds)
-    const activeDocIds = [...new Set(chunks.map((c) => c.docId))];
-    const sources = vectorStore.search(questionEmbedding, 5, activeDocIds);
+    const activeDocIds = Array.from(new Set(chunks.map((c) => c.docId)));    const sources = vectorStore.search(questionEmbedding, 5, activeDocIds);
 
     if (sources.length === 0) {
       return NextResponse.json({
